@@ -1,6 +1,20 @@
 import { useState } from "react"
 
 
+    function cleanWiktionaryText(text) {
+  return text
+    .replace(/\{\{doublet\|[^}]*\}\}/g, "")
+    .replace(/\{\{noncog\|[^}]*\}\}/g, "")
+    .replace(/\{\{dercat\|[^}]*\}\}/g, "")
+    .replace(/\{\{der\|[^}]*\}\}/g, "")
+    .replace(/\{\{m\|[^}]*\}\}/g, "")
+    .replace(/\{\{R:[^}]*\}\}/g, "")
+    .replace(/\{\{etymon\|[^}]*\}\}/g, "")
+    .replace(/\{\{inh\+?\|[^|}]*\|[^|}]*\|([^|}]+)[^}]*\}\}/g, "$1")
+    .replace(/\{\{cog\|[^}]*\|([^|}]+)\}\}/g, "$1")
+    .replace(/\{\{ref\|[^}]*\}\}/g, "")
+    .trim()
+}
 
 
 function App() {
@@ -14,23 +28,64 @@ async function handleSearch() {
     return
   }
 
- const response = await fetch(
-  `https://en.wiktionary.org/w/api.php?action=query&titles=${encodeURIComponent(word)}&prop=extracts&explaintext=1&format=json&origin=*`
+const response = await fetch(
+  `https://en.wiktionary.org/w/api.php?action=parse&page=${encodeURIComponent(word)}&prop=tocdata&format=json&origin=*`
 )
 
 console.log("Selected language:", language)
 
   const data = await response.json()
 
-const page = Object.values(data.query.pages)[0]
+const sections = data.parse.tocdata.sections
 
-const etymologyMatch = page.extract.match(
-  /=== Etymology 1 ===\n\n([\s\S]*?)(?=\n===)/
+const languageNames = {
+  en: "English",
+  es: "Spanish",
+  ru: "Russian",
+}
+
+const selectedLanguageName = languageNames[language]
+
+const languageIndex = sections.findIndex(
+  (section) => section.line === selectedLanguageName
 )
 
-if (etymologyMatch) {
-  setResult(etymologyMatch[1])
-}
+console.log("Selected language section:", selectedLanguageName)
+console.log("Language section index:", languageIndex)
+
+const etymologyIndex = sections.findIndex(
+  (section, index) =>
+    index > languageIndex && section.line.startsWith("Etymology")
+)
+
+console.log("Etymology section index:", etymologyIndex)
+
+const etymologySection = sections[etymologyIndex]
+
+const etymologyResponse = await fetch(
+  `https://en.wiktionary.org/w/api.php?action=parse&page=${encodeURIComponent(word)}&prop=wikitext&section=${etymologySection.index}&format=json&origin=*`
+)
+
+const etymologyData = await etymologyResponse.json()
+
+const etymologyText = etymologyData.parse.wikitext["*"]
+
+const etymologyOnly = etymologyText
+
+  .replace(/^===Etymology.*?===\s*/, "")
+  .split(/\n====/)[0]
+  .split("Some have proposed")[0]
+  .trim()
+
+const cleanText = cleanWiktionaryText(etymologyOnly)
+
+setResult(cleanText)
+//   /=== Etymology 1 ===\n\n([\s\S]*?)(?=\n===)/
+// )
+// 
+// if (etymologyMatch) {
+//   setResult(etymologyMatch[1])
+// }
 }
 
   return (
