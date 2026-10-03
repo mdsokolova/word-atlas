@@ -1,7 +1,11 @@
 import { useState } from "react"
 
+
+
+
 function App() {
   const [word, setWord] = useState("")
+  const [result, setResult] = useState("")
 
 async function handleSearch() {
   if (!word.trim()) {
@@ -15,7 +19,15 @@ async function handleSearch() {
 
   const data = await response.json()
 
-  console.log(data)
+const page = Object.values(data.query.pages)[0]
+
+const etymologyMatch = page.extract.match(
+  /=== Etymology 1 ===\n\n([\s\S]*?)(?=\n===)/
+)
+
+if (etymologyMatch) {
+  setResult(etymologyMatch[1])
+}
 }
 
   return (
@@ -35,6 +47,7 @@ async function handleSearch() {
       </button>
 
       <p>You entered: {word}</p>
+      <p>{result}</p>
     </div>
   )
 }
