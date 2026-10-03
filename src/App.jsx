@@ -6,6 +6,7 @@ import { useState } from "react"
 function App() {
   const [word, setWord] = useState("")
   const [result, setResult] = useState("")
+  const [language, setLanguage] = useState("en")
 
 async function handleSearch() {
   if (!word.trim()) {
@@ -35,7 +36,10 @@ if (etymologyMatch) {
       <h1>WORD ATLAS</h1>
       <p>Explore the history of words across languages.</p>
 
-<select>
+<select
+  value={language}
+  onChange={(event) => setLanguage(event.target.value)}
+>
   <option value="en">English</option>
   <option value="es">Spanish</option>
   <option value="ru">Russian</option>
