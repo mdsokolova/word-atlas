@@ -3,6 +3,10 @@ import { useState } from "react"
 function App() {
   const [word, setWord] = useState("")
 
+  function handleSearch() {
+    console.log("Searching for:", word)
+  }
+
   return (
     <div>
       <h1>WORD ATLAS</h1>
@@ -14,6 +18,10 @@ function App() {
         value={word}
         onChange={(event) => setWord(event.target.value)}
       />
+
+      <button onClick={handleSearch}>
+        Search
+      </button>
 
       <p>You entered: {word}</p>
     </div>
