@@ -14,9 +14,11 @@ async function handleSearch() {
     return
   }
 
-  const response = await fetch(
-    `https://en.wiktionary.org/w/api.php?action=query&titles=${encodeURIComponent(word)}&prop=extracts&explaintext=1&format=json&origin=*`
-  )
+ const response = await fetch(
+  `https://en.wiktionary.org/w/api.php?action=query&titles=${encodeURIComponent(word)}&prop=extracts&explaintext=1&format=json&origin=*`
+)
+
+console.log("Selected language:", language)
 
   const data = await response.json()
 
