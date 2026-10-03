@@ -3,9 +3,20 @@ import { useState } from "react"
 function App() {
   const [word, setWord] = useState("")
 
-  function handleSearch() {
-    console.log("Searching for:", word)
+async function handleSearch() {
+  if (!word.trim()) {
+    alert("Please enter a word.")
+    return
   }
+
+  const response = await fetch(
+    `https://en.wiktionary.org/w/api.php?action=query&titles=${encodeURIComponent(word)}&prop=extracts&explaintext=1&format=json&origin=*`
+  )
+
+  const data = await response.json()
+
+  console.log(data)
+}
 
   return (
     <div>
