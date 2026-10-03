@@ -35,6 +35,12 @@ if (etymologyMatch) {
       <h1>WORD ATLAS</h1>
       <p>Explore the history of words across languages.</p>
 
+<select>
+  <option value="en">English</option>
+  <option value="es">Spanish</option>
+  <option value="ru">Russian</option>
+</select>
+
       <input
         type="text"
         placeholder="Enter a word..."
