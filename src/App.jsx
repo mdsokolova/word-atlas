@@ -21,6 +21,7 @@ function App() {
   const [word, setWord] = useState("")
   const [result, setResult] = useState("")
   const [language, setLanguage] = useState("en")
+  const [loading, setLoading] = useState(false)
 
 async function handleSearch() {
   if (!word.trim()) {
@@ -28,64 +29,66 @@ async function handleSearch() {
     return
   }
 
-const response = await fetch(
-  `https://en.wiktionary.org/w/api.php?action=parse&page=${encodeURIComponent(word)}&prop=tocdata&format=json&origin=*`
-)
+  setLoading(true)
 
-console.log("Selected language:", language)
+  try {
+    const response = await fetch(
+      `https://en.wiktionary.org/w/api.php?action=parse&page=${encodeURIComponent(word)}&prop=tocdata&format=json&origin=*`
+    )
 
-  const data = await response.json()
+    console.log("Selected language:", language)
 
-const sections = data.parse.tocdata.sections
+    const data = await response.json()
 
-const languageNames = {
-  en: "English",
-  es: "Spanish",
-  ru: "Russian",
-}
+    const sections = data.parse.tocdata.sections
 
-const selectedLanguageName = languageNames[language]
+    const languageNames = {
+      en: "English",
+      es: "Spanish",
+      ru: "Russian",
+    }
 
-const languageIndex = sections.findIndex(
-  (section) => section.line === selectedLanguageName
-)
+    const selectedLanguageName = languageNames[language]
 
-console.log("Selected language section:", selectedLanguageName)
-console.log("Language section index:", languageIndex)
+    const languageIndex = sections.findIndex(
+      (section) => section.line === selectedLanguageName
+    )
 
-const etymologyIndex = sections.findIndex(
-  (section, index) =>
-    index > languageIndex && section.line.startsWith("Etymology")
-)
+    console.log("Selected language section:", selectedLanguageName)
+    console.log("Language section index:", languageIndex)
 
-console.log("Etymology section index:", etymologyIndex)
+    const etymologyIndex = sections.findIndex(
+      (section, index) =>
+        index > languageIndex && section.line.startsWith("Etymology")
+    )
 
-const etymologySection = sections[etymologyIndex]
+    console.log("Etymology section index:", etymologyIndex)
 
-const etymologyResponse = await fetch(
-  `https://en.wiktionary.org/w/api.php?action=parse&page=${encodeURIComponent(word)}&prop=wikitext&section=${etymologySection.index}&format=json&origin=*`
-)
+    const etymologySection = sections[etymologyIndex]
 
-const etymologyData = await etymologyResponse.json()
+    const etymologyResponse = await fetch(
+      `https://en.wiktionary.org/w/api.php?action=parse&page=${encodeURIComponent(word)}&prop=wikitext&section=${etymologySection.index}&format=json&origin=*`
+    )
 
-const etymologyText = etymologyData.parse.wikitext["*"]
+    const etymologyData = await etymologyResponse.json()
 
-const etymologyOnly = etymologyText
+    const etymologyText = etymologyData.parse.wikitext["*"]
 
-  .replace(/^===Etymology.*?===\s*/, "")
-  .split(/\n====/)[0]
-  .split("Some have proposed")[0]
-  .trim()
+    const etymologyOnly = etymologyText
+      .replace(/^===Etymology.*?===\s*/, "")
+      .split(/\n====/)[0]
+      .split("Some have proposed")[0]
+      .trim()
 
-const cleanText = cleanWiktionaryText(etymologyOnly)
+    const cleanText = cleanWiktionaryText(etymologyOnly)
 
-setResult(cleanText)
-//   /=== Etymology 1 ===\n\n([\s\S]*?)(?=\n===)/
-// )
-// 
-// if (etymologyMatch) {
-//   setResult(etymologyMatch[1])
-// }
+    setResult(cleanText)
+  } catch (error) {
+    console.error(error)
+    alert("Something went wrong. Please try again.")
+  } finally {
+    setLoading(false)
+  }
 }
 
   return (
@@ -109,9 +112,9 @@ setResult(cleanText)
         onChange={(event) => setWord(event.target.value)}
       />
 
-      <button onClick={handleSearch}>
-        Search
-      </button>
+      <button onClick={handleSearch} disabled={loading}>
+  {loading ? "Searching..." : "Search"}
+</button>
 
       <p>You entered: {word}</p>
       <p>{result}</p>
