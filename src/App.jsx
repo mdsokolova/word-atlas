@@ -1,19 +1,29 @@
 import { useState } from "react"
+import "./App.css"
 
 
     function cleanWiktionaryText(text) {
   return text
     .replace(/\{\{doublet\|[^}]*\}\}/g, "")
+    .replace(/\{\{bor\+?\|[^|}]*\|[^|}]*\|([^|}]+)[^}]*\}\}/g, "$1")
     .replace(/\{\{noncog\|[^}]*\}\}/g, "")
+    .replace(/\{\{unc\|[^|}]*\|([^|}]+)[^}]*\}\}/g, "$1")
+    .replace(/<ref>[\s\S]*?<\/ref>/g, "")
+    .replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g, "$2")
+    .replace(/\[\[([^\]]+)\]\]/g, "$1")
+    .replace(/''([^']+)''/g, "$1")
     .replace(/\{\{dercat\|[^}]*\}\}/g, "")
-    .replace(/\{\{der\|[^}]*\}\}/g, "")
-    .replace(/\{\{m\|[^}]*\}\}/g, "")
+    .replace(/\{\{der\|[^|}]*\|[^|}]*\|([^|}]+)[^}]*\}\}/g, (_, value) =>
+  value === "-" ? "" : value
+)
+    .replace(/\{\{m\|[^|}]*\|([^|}]+)[^}]*\}\}/g, "$1")
     .replace(/\{\{R:[^}]*\}\}/g, "")
     .replace(/\{\{etymon\|[^}]*\}\}/g, "")
     .replace(/\{\{inh\+?\|[^|}]*\|[^|}]*\|([^|}]+)[^}]*\}\}/g, "$1")
     .replace(/\{\{cog\|[^}]*\|([^|}]+)\}\}/g, "$1")
     .replace(/\{\{ref\|[^}]*\}\}/g, "")
-    .trim()
+.replace(/\.{2,}/g, ".")
+.trim()
 }
 
 
@@ -39,7 +49,10 @@ async function handleSearch() {
     console.log("Selected language:", language)
 
     const data = await response.json()
-
+if (!data.parse) {
+  setResult(`No Wiktionary page was found for "${word}".`)
+  return
+}
     const sections = data.parse.tocdata.sections
 
     const languageNames = {
@@ -57,14 +70,35 @@ async function handleSearch() {
     console.log("Selected language section:", selectedLanguageName)
     console.log("Language section index:", languageIndex)
 
-    const etymologyIndex = sections.findIndex(
-      (section, index) =>
-        index > languageIndex && section.line.startsWith("Etymology")
-    )
+  const nextLanguageIndex = sections.findIndex(
+  (section, index) =>
+    index > languageIndex &&
+    ["English", "Spanish", "Russian"].includes(section.line)
+)
+
+const languageEndIndex =
+  nextLanguageIndex === -1 ? sections.length : nextLanguageIndex
+
+const etymologyIndex = sections.findIndex(
+  (section, index) =>
+    index > languageIndex &&
+    index < languageEndIndex &&
+    section.line.startsWith("Etymology")
+)
 
     console.log("Etymology section index:", etymologyIndex)
 
-    const etymologySection = sections[etymologyIndex]
+    if (languageIndex === -1) {
+  setResult(`No ${selectedLanguageName} entry was found for "${word}".`)
+  return
+}
+
+if (etymologyIndex === -1) {
+  setResult(`No etymology was found for "${word}".`)
+  return
+}
+
+const etymologySection = sections[etymologyIndex]
 
     const etymologyResponse = await fetch(
       `https://en.wiktionary.org/w/api.php?action=parse&page=${encodeURIComponent(word)}&prop=wikitext&section=${etymologySection.index}&format=json&origin=*`
@@ -73,12 +107,13 @@ async function handleSearch() {
     const etymologyData = await etymologyResponse.json()
 
     const etymologyText = etymologyData.parse.wikitext["*"]
+    console.log("RAW ETYMOLOGY:", etymologyText)
 
-    const etymologyOnly = etymologyText
-      .replace(/^===Etymology.*?===\s*/, "")
-      .split(/\n====/)[0]
-      .split("Some have proposed")[0]
-      .trim()
+    
+ const etymologyOnly = etymologyText
+  .replace(/^===Etymology.*?===\s*/, "")
+  .split("\n\n")[0]
+  .trim()
 
     const cleanText = cleanWiktionaryText(etymologyOnly)
 
@@ -91,8 +126,8 @@ async function handleSearch() {
   }
 }
 
-  return (
-    <div>
+return (
+  <div className="app">
       <h1>WORD ATLAS</h1>
       <p>Explore the history of words across languages.</p>
 
@@ -117,7 +152,10 @@ async function handleSearch() {
 </button>
 
       <p>You entered: {word}</p>
-      <p>{result}</p>
+     <div className="result-card">
+  <h2>{word}</h2>
+  <p>{result}</p>
+</div>
     </div>
   )
 }
