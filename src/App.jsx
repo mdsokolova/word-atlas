@@ -1,4 +1,6 @@
 import { useState } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import { addFavorite, removeFavorite } from "./features/favorites/favoritesSlice"
 import "./App.css"
 
 
@@ -32,6 +34,15 @@ function App() {
   const [result, setResult] = useState("")
   const [language, setLanguage] = useState("en")
   const [loading, setLoading] = useState(false)
+  const dispatch = useDispatch()
+  const favorites = useSelector((state) => state.favorites)
+  const [filterLanguage, setFilterLanguage] = useState("all")
+  const filteredFavorites =
+  filterLanguage === "all"
+    ? favorites
+    : favorites.filter(
+        (favorite) => favorite.language === filterLanguage
+      )
 
 async function handleSearch() {
   if (!word.trim()) {
@@ -125,6 +136,16 @@ const etymologySection = sections[etymologyIndex]
     setLoading(false)
   }
 }
+function handleSaveFavorite() {
+  dispatch(
+    addFavorite({
+      id: `${language}-${word.toLowerCase()}`,
+      word,
+      language,
+      etymology: result,
+    })
+  )
+}
 
 return (
   <div className="app">
@@ -155,6 +176,43 @@ return (
      <div className="result-card">
   <h2>{word}</h2>
   <p>{result}</p>
+</div>
+
+{result && (
+  <button onClick={handleSaveFavorite}>
+    Save to Favorites
+  </button>
+)}
+<div className="favorites">
+  <h2>My Favorites</h2>
+
+  <select
+  value={filterLanguage}
+  onChange={(event) => setFilterLanguage(event.target.value)}
+>
+  <option value="all">All languages</option>
+  <option value="en">English</option>
+  <option value="es">Spanish</option>
+  <option value="ru">Russian</option>
+</select>
+
+  {filteredFavorites.length === 0 ? (
+    <p>No favorite words yet.</p>
+  ) : (
+    filteredFavorites.map((favorite) => (
+      <div key={favorite.id} className="favorite-card">
+        <h3>{favorite.word}</h3>
+        <p>Language: {favorite.language}</p>
+        <p>{favorite.etymology}</p>
+
+        <button
+          onClick={() => dispatch(removeFavorite(favorite.id))}
+        >
+          Remove
+        </button>
+      </div>
+    ))
+  )}
 </div>
     </div>
   )
