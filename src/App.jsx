@@ -21,12 +21,71 @@ import "./App.css"
     .replace(/\{\{m\|[^|}]*\|([^|}]+)[^}]*\}\}/g, "$1")
     .replace(/\{\{R:[^}]*\}\}/g, "")
     .replace(/\{\{etymon\|[^}]*\}\}/g, "")
+    .replace(/\{\{ety\|[^}]*\}\}/g, "")
     .replace(/\{\{inh\+?\|[^|}]*\|[^|}]*\|([^|}]+)[^}]*\}\}/g, "$1")
     .replace(/\{\{cog\|[^}]*\|([^|}]+)\}\}/g, "$1")
     .replace(/\{\{ref\|[^}]*\}\}/g, "")
-.replace(/\.{2,}/g, ".")
-.trim()
+    .replace(/\.{2,}/g, ".")
+    .replace(/\{\{PIE word\|[^}]*\}\}/g, "")
+    .trim()
 }
+
+
+function extractEtymology(text) {
+  const matches = [
+    ...text.matchAll(
+      /\{\{inh\+?\|[^|}]+\|([^|}]+)\|([^|}]+)(?:\|[^}]*)?\}\}/g
+    ),
+  ]
+
+  const languageNames = {
+    enm: "Middle English",
+    ang: "Old English",
+    "gmw-pro": "Proto-West Germanic",
+    "gem-pro": "Proto-Germanic",
+    "ine-pro": "Proto-Indo-European",
+    la: "Latin",
+"itc-pro": "Proto-Italic",
+orv: "Old Russian",
+"sla-pro": "Proto-Slavic",
+"ine-bsl-pro": "Proto-Balto-Slavic",
+  }
+
+  return matches.map((match) => ({
+    language: languageNames[match[1]] || match[1],
+    word: match[2],
+  }))
+}
+
+function extractPIEOrigin(text) {
+  const match = text.match(
+    /\{\{PIE word\|[^|}]+\|([^|}]+)/
+  )
+
+  return match ? match[1] : null
+}
+
+function extractCognates(text) {
+  const matches = [
+    ...text.matchAll(
+      /\{\{cog\|([^|}]+)\|([^|}]+)(?:\|[^}]*)?\}\}/g
+    ),
+  ]
+
+  const languageNames = {
+    sa: "Sanskrit",
+    la: "Latin",
+    en: "English",
+    de: "German",
+    grc: "Ancient Greek",
+  }
+
+  return matches.map((match) => ({
+    language: languageNames[match[1]] || match[1],
+    word: match[2],
+  }))
+}
+
 
 
 function App() {
@@ -126,9 +185,29 @@ const etymologySection = sections[etymologyIndex]
   .split("\n\n")[0]
   .trim()
 
-    const cleanText = cleanWiktionaryText(etymologyOnly)
+const cleanText = cleanWiktionaryText(etymologyOnly)
 
-    setResult(cleanText)
+const origins = extractEtymology(etymologyOnly)
+  .map(({ language, word }) => `${word} — ${language}`)
+  .join("\n")
+
+  const pieOrigin = extractPIEOrigin(etymologyOnly)
+  const cognates = extractCognates(etymologyText)
+
+const cognateText = cognates
+  .map(({ word, language }) => `${word} — ${language}`)
+  .join("\n")
+
+setResult(
+  `${cleanText}\n\nHistorical language stages:\n${origins}${
+    pieOrigin ? `\n\nProto-Indo-European origin:\n${pieOrigin}` : ""
+  }${
+    cognateText
+      ? `\n\nRelated words (cognates):\n${cognateText}`
+      : ""
+  }`
+)
+
   } catch (error) {
     console.error(error)
     alert("Something went wrong. Please try again.")
@@ -175,7 +254,7 @@ return (
       <p>You entered: {word}</p>
      <div className="result-card">
   <h2>{word}</h2>
-  <p>{result}</p>
+  <p style={{ whiteSpace: "pre-line" }}>{result}</p>
 </div>
 
 {result && (
